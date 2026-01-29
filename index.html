@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CircuitSim</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            overflow: hidden;
+        }
+
+        #app-container {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        /* Top Menu Bar */
+        #menu-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        #menu-bar h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .menu-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .menu-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+
+        .menu-btn:active {
+            transform: translateY(0);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        /* Main Content Area */
+        #main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Component Palette */
+        #component-palette {
+            width: 200px;
+            background: #16213e;
+            border-right: 2px solid #0f3460;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .palette-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .component-item {
+            background: #0f3460;
+            border: 2px solid #1a5490;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: move;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .component-item:hover {
+            background: #1a5490;
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .component-item .icon {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .component-item .name {
+            font-size: 12px;
+            color: #eee;
+        }
+
+        /* Canvas Area */
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background: #0f3460;
+            overflow: hidden;
+        }
+
+        #circuit-canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        /* Properties Panel */
+        #properties-panel {
+            width: 250px;
+            background: #16213e;
+            border-left: 2px solid #0f3460;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .properties-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .property-group {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .property-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .property-value {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Interactive Property Controls */
+        .property-group.editable {
+            background: #1a5490;
+            border: 1px solid #667eea;
+        }
+
+        .property-select {
+            width: 100%;
+            background: #0f3460;
+            color: #fff;
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .property-select:hover {
+            background: #1a5490;
+            border-color: #764ba2;
+        }
+
+        .property-select:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        }
+
+        .property-button {
+            width: 100%;
+            background: #0f3460;
+            color: #fff;
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .property-button:hover {
+            background: #1a5490;
+            border-color: #764ba2;
+            transform: translateY(-1px);
+        }
+
+        .property-button:active {
+            transform: translateY(0);
+        }
+
+        /* Circuit Insights Panel */
+        #circuit-insights-panel {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid #f59e0b;
+            min-height: 100px;
+        }
+
+        .insights-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #f59e0b;
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .insight-item {
+            background: #1a1a2e;
+            border-left: 3px solid;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .insight-item.success {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .insight-item.warning {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .insight-item.danger {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .insight-item.info {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        .insight-icon {
+            font-size: 14px;
+            margin-right: 5px;
+        }
+
+        .insight-text {
+            color: #e5e7eb;
+        }
+
+        .insight-formula {
+            background: #0f172a;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: 'Courier New', monospace;
+            color: #60a5fa;
+            font-size: 11px;
+            display: inline-block;
+            margin: 2px;
+        }
+
+        /* Ohm's Law Display */
+        #ohms-law-panel {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid #667eea;
+        }
+
+        #ohms-law-panel.simulation-off {
+            opacity: 0.5;
+            border-color: #555;
+        }
+
+        .ohms-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ohms-equation {
+            background: #1a1a2e;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            color: #60a5fa;
+            font-weight: bold;
+        }
+
+        .ohms-data {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .ohms-item {
+            background: #1a1a2e;
+            border-radius: 4px;
+            padding: 8px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ohms-item-label {
+            font-size: 11px;
+            color: #aaa;
+            text-transform: uppercase;
+        }
+
+        .ohms-item-value {
+            font-size: 13px;
+            color: #fff;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .ohms-item-value.voltage { color: #10b981; }
+        .ohms-item-value.current { color: #f59e0b; }
+        .ohms-item-value.resistance { color: #8b5cf6; }
+        .ohms-item-value.power { color: #ef4444; }
+
+        /* Status Indicator */
+        .status-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            z-index: 2000;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .status-indicator.success {
+            background: rgba(34, 197, 94, 0.9);
+        }
+
+        .status-indicator.error {
+            background: rgba(239, 68, 68, 0.9);
+        }
+
+        .status-indicator.info {
+            background: rgba(59, 130, 246, 0.9);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+            pointer-events: none;
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .empty-state .text {
+            font-size: 16px;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f3460;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Top Menu Bar -->
+        <div id="menu-bar">
+            <h1>&#9889; CircuitSim</h1>
+
+            <div class="menu-group">
+                <button class="menu-btn" id="btn-new" title="New Circuit">
+                    &#128196; New
+                </button>
+                <button class="menu-btn" id="btn-save" title="Save Circuit (Ctrl+S)">
+                    &#128190; Save
+                </button>
+                <button class="menu-btn" id="btn-clear" title="Clear All">
+                    &#128465;&#65039; Clear
+                </button>
+            </div>
+
+            <div class="menu-group">
+                <button class="menu-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled style="opacity: 0.4; cursor: not-allowed;">
+                    &#8630; Undo
+                </button>
+                <button class="menu-btn" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled style="opacity: 0.4; cursor: not-allowed;">
+                    &#8631; Redo
+                </button>
+            </div>
+
+            <div class="spacer"></div>
+
+            <div class="menu-group">
+                <button class="menu-btn" id="btn-simulate" title="Start/Stop Simulation (Resets Damage)">
+                    &#9654;&#65039; Simulate
+                </button>
+                <button class="menu-btn" id="btn-help" title="Help">
+                    &#10067; Help
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content">
+            <!-- Component Palette -->
+            <div id="component-palette">
+                <div class="palette-title">Components</div>
+
+                <div class="component-item" data-component="battery" draggable="true">
+                    <span class="icon">&#128267;</span>
+                    <span class="name">Battery</span>
+                </div>
+
+                <div class="component-item" data-component="resistor" draggable="true">
+                    <span class="icon"><canvas id="resistor-icon" width="40" height="32"></canvas></span>
+                    <span class="name">Resistor</span>
+                </div>
+
+                <div class="component-item" data-component="led" draggable="true">
+                    <span class="icon">&#128161;</span>
+                    <span class="name">LED</span>
+                </div>
+
+                <div class="component-item" data-component="diode" draggable="true">
+                    <span class="icon">&#128314;</span>
+                    <span class="name">Diode</span>
+                </div>
+
+                <div class="component-item" data-component="switch" draggable="true">
+                    <span class="icon">&#128280;</span>
+                    <span class="name">Switch</span>
+                </div>
+
+                <div class="component-item" data-component="ground" draggable="true">
+                    <span class="icon">&#9242;</span>
+                    <span class="name">Ground</span>
+                </div>
+
+                <div class="palette-title" style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">Robotics</div>
+
+                <div class="component-item" data-component="batteryPackAA" draggable="true">
+                    <span class="icon">&#128268;</span>
+                    <span class="name">4xAA Pack</span>
+                </div>
+
+                <div class="component-item" data-component="raspberryPi" draggable="true">
+                    <span class="icon">&#128187;</span>
+                    <span class="name">Raspberry Pi</span>
+                </div>
+
+                <div class="component-item" data-component="motorController" draggable="true">
+                    <span class="icon">&#127899;&#65039;</span>
+                    <span class="name">Motor Driver</span>
+                </div>
+
+                <div class="component-item" data-component="dcMotor" draggable="true">
+                    <span class="icon">&#9881;&#65039;</span>
+                    <span class="name">DC Motor</span>
+                </div>
+            </div>
+
+            <!-- Canvas Area -->
+            <div id="canvas-container">
+                <canvas id="circuit-canvas"></canvas>
+                <div class="empty-state" id="empty-state">
+                    <div class="icon">&#9889;</div>
+                    <div class="text">Drag components here to start building</div>
+                </div>
+            </div>
+
+            <!-- Properties Panel -->
+            <div id="properties-panel">
+                <!-- Circuit Insights Panel -->
+                <div id="circuit-insights-panel">
+                    <div class="insights-title">&#128161; Circuit Insights</div>
+                    <div id="insights-content">
+                        <div class="insight-item info">
+                            <span class="insight-icon">&#8505;&#65039;</span>
+                            <span class="insight-text">Build a circuit to see real-time analysis and learning tips!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ohm's Law Display -->
+                <div id="ohms-law-panel" class="simulation-off">
+                    <div class="ohms-title">&#9889; Ohm's Law</div>
+                    <div class="ohms-equation" id="ohms-equation">V = I &times; R</div>
+                    <div class="ohms-data">
+                        <div class="ohms-item">
+                            <span class="ohms-item-label">Voltage (V)</span>
+                            <span class="ohms-item-value voltage" id="ohms-voltage">-</span>
+                        </div>
+                        <div class="ohms-item">
+                            <span class="ohms-item-label">Current (I)</span>
+                            <span class="ohms-item-value current" id="ohms-current">-</span>
+                        </div>
+                        <div class="ohms-item">
+                            <span class="ohms-item-label">Resistance (R)</span>
+                            <span class="ohms-item-value resistance" id="ohms-resistance">-</span>
+                        </div>
+                        <div class="ohms-item">
+                            <span class="ohms-item-label">Power (P)</span>
+                            <span class="ohms-item-value power" id="ohms-power">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Robot Wiring Panel -->
+                <div id="robot-wiring-panel" style="display: none;">
+                    <div class="insights-title">&#129302; Robot Wiring</div>
+                    <div id="robot-wiring-content">
+                        <div id="robot-wiring-progress" style="margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-size: 11px; color: #aaa;">Progress</span>
+                                <span id="robot-wiring-count" style="font-size: 11px; color: #667eea; font-weight: bold;">0/0</span>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 6px; overflow: hidden;">
+                                <div id="robot-wiring-bar" style="background: #667eea; height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                        <div id="robot-wiring-checklist" style="font-size: 11px; line-height: 1.8;"></div>
+                        <div id="robot-wiring-complete" style="display: none; text-align: center; padding: 8px; background: rgba(39,174,96,0.15); border-radius: 6px; margin-top: 6px;">
+                            <span style="font-size: 16px;">&#127881;</span>
+                            <div style="color: #2ecc71; font-weight: bold; font-size: 12px; margin-top: 2px;">All Connected!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="properties-title">Properties</div>
+                <div id="properties-content">
+                    <div class="property-group">
+                        <div class="property-label">Status</div>
+                        <div class="property-value">No component selected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stub for original main.js which references window.circuitApp -->
+    <script>window.circuitApp = {};</script>
+
+    <!-- Load modules -->
+    <script src="js/Component.js"></script>
+    <script src="js/components/Battery.js"></script>
+    <script src="js/components/Resistor.js"></script>
+    <script src="js/components/LED.js"></script>
+    <script src="js/components/Diode.js"></script>
+    <script src="js/components/Switch.js"></script>
+    <script src="js/components/Wire.js"></script>
+    <script src="js/components/Ground.js"></script>
+    <script src="js/components/BatteryPackAA.js"></script>
+    <script src="js/components/RaspberryPi.js"></script>
+    <script src="js/components/MotorController.js"></script>
+    <script src="js/components/DCMotor.js"></script>
+    <script src="js/RobotWiringValidator.js"></script>
+    <script src="js/VisualEffects.js"></script>
+    <script src="js/CircuitCanvas.js"></script>
+    <script src="js/CircuitSimulator.js"></script>
+    <script src="js/PathFinder.js"></script>
+    <script src="js/SaveLoadManager.js"></script>
+    <script src="js/HistoryManager.js"></script>
+    <script src="js/UIManager.js"></script>
+    <script src="js/main.js"></script>
+    <!-- Draw resistor icon -->
+    <script>
+        (function() {
+            const canvas = document.getElementById('resistor-icon');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+
+                // Wire leads
+                ctx.strokeStyle = '#95a5a6';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(2, 16);
+                ctx.lineTo(8, 16);
+                ctx.moveTo(32, 16);
+                ctx.lineTo(38, 16);
+                ctx.stroke();
+
+                // Resistor body (zigzag pattern matching the component)
+                const segments = 6;
+                const segmentWidth = 24 / segments;
+                const amplitude = 6;
+
+                ctx.strokeStyle = '#e67e22';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(8, 16);
+
+                for (let i = 0; i <= segments; i++) {
+                    const x = 8 + (i * segmentWidth);
+                    const y = 16 + ((i % 2 === 0) ? amplitude : -amplitude);
+                    ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+        })();
+    </script>
+</body>
+</html>
