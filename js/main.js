@@ -41,20 +41,8 @@ function init() {
     const historyManager = new HistoryManager(circuitCanvas, 50); // 50 state limit
     window.historyManager = historyManager;
 
-    // Load initial data from PHP (already in window.circuitApp.initialData)
-    if (window.circuitApp.initialData && window.circuitApp.initialData.components) {
-        circuitCanvas.fromJSON(window.circuitApp.initialData);
-        // Clear history and start fresh with loaded circuit
-        historyManager.clear();
-    }
-
     // Start simulation loop
     startSimulationLoop();
-
-    // Enable auto-save (every 60 seconds)
-    if (window.circuitApp.projectId && window.circuitApp.projectId !== '') {
-        saveLoadManager.enableAutoSave(60);
-    }
 
     // Make saveLoadManager available globally for markDirty calls
     window.saveLoadManager = saveLoadManager;
