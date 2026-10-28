@@ -81,11 +81,23 @@ class CircuitCanvas {
         document.addEventListener('keydown', (e) => this.onKeyDown(e));
         document.addEventListener('keyup', (e) => this.onKeyUp(e));
 
+        // A finger works through the mouse handlers above: one finger is the
+        // left button (two quick taps a double-click, which cycles a part's
+        // value), two fingers pinch to zoom and drag to pan, since a touch
+        // screen has no wheel, middle button or space bar.
+        if (window.TouchBridge) {
+            TouchBridge.attach(this.canvas, {
+                dblclick: true,
+                onPinch: (x, y, scale, dx, dy) => this.pinchView(x, y, scale, dx, dy)
+            });
+        }
+
         // Drag and drop from palette
         document.querySelectorAll('.component-item').forEach(item => {
             item.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('componentType', item.dataset.component);
             });
+            this.touchDragFromPalette(item);
         });
 
         this.canvas.addEventListener('dragover', (e) => {
@@ -102,6 +114,55 @@ class CircuitCanvas {
                 this.addComponent(componentType, x, y);
             }
         });
+    }
+
+    /**
+     * HTML drag and drop does not start from a finger inside the platform
+     * iframe, so a touch on a palette item drags a copy of it by hand and
+     * drops the part where the finger lifts over the board.
+     */
+    touchDragFromPalette(item) {
+        let start = null, ghost = null;
+        const clear = () => { if (ghost) ghost.remove(); ghost = null; start = null; };
+        item.addEventListener('pointerdown', (e) => {
+            if (e.pointerType !== 'touch') return;
+            start = { x: e.clientX, y: e.clientY };
+            item.setPointerCapture(e.pointerId);
+        });
+        item.addEventListener('pointermove', (e) => {
+            if (!start) return;
+            if (!ghost) {
+                if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < 8) return;
+                ghost = item.cloneNode(true);
+                ghost.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;opacity:.85;margin:0;width:' + item.offsetWidth + 'px';
+                document.body.appendChild(ghost);
+            }
+            ghost.style.left = (e.clientX - ghost.offsetWidth / 2) + 'px';
+            ghost.style.top = (e.clientY - ghost.offsetHeight / 2) + 'px';
+        });
+        item.addEventListener('pointerup', (e) => {
+            const dropped = ghost !== null;
+            clear();
+            if (!dropped) return;
+            const rect = this.canvas.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                this.addComponent(item.dataset.component, e.clientX - rect.left, e.clientY - rect.top);
+            }
+        });
+        item.addEventListener('pointercancel', clear);
+    }
+
+    /**
+     * Two-finger pinch and pan. Zooms about the point between the fingers the
+     * way onMouseWheel zooms about the cursor.
+     */
+    pinchView(x, y, scale, dx, dy) {
+        const before = this.screenToWorld(x, y);
+        this.scale = Math.max(this.minScale, Math.min(this.maxScale, this.scale * scale));
+        const after = this.screenToWorld(x, y);
+        this.panOffset.x += (after.x - before.x) * this.scale + dx;
+        this.panOffset.y += (after.y - before.y) * this.scale + dy;
+        this.render();
     }
 
     /**
